@@ -1,0 +1,47 @@
+name: Trigger auto deployment for finance-app-2
+
+# When this action will be executed
+on:
+  # Automatically trigger it when detected changes in repo
+  push:
+    branches: 
+      [ main ]
+    paths:
+    - '**'
+    - '.github/workflows/finance-app-2-AutoDeployTrigger-3ec913b3-9ebb-477f-a6ea-75f0ca0653be.yml'
+
+  # Allow manual trigger 
+  workflow_dispatch:      
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    permissions: 
+      id-token: write #This is required for requesting the OIDC JWT Token
+      contents: read #Required when GH token is used to authenticate with private repo
+
+    steps:
+      - name: Checkout to the branch
+        uses: actions/checkout@v2
+
+      - name: Azure Login
+        uses: azure/login@v1
+        with:
+          client-id: ${{ secrets.FINANCEAPP2_AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.FINANCEAPP2_AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.FINANCEAPP2_AZURE_SUBSCRIPTION_ID }}
+
+      - name: Build and push container image to registry
+        uses: azure/container-apps-deploy-action@v2
+        with:
+          appSourcePath: ${{ github.workspace }} 
+          registryUrl: 
+          registryUsername: ${{ secrets.FINANCEAPP2_REGISTRY_USERNAME }}
+          registryPassword: ${{ secrets.FINANCEAPP2_REGISTRY_PASSWORD }}
+          containerAppName: finance-app-2
+          resourceGroup: FinanceApp2
+          imageToBuild: default/[parameters('containerAppName')]:${{ github.sha }}
+          _buildArgumentsKey_: |
+            _buildArgumentsValues_
+
+
